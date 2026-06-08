@@ -13,6 +13,7 @@ func main() {
 	}
 }
 
+// in memory storage
 var urls = make(map[string]string)
 
 func run() error {
@@ -41,14 +42,6 @@ func getUrlHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-/*
-
-	data := service.ShortURL(string(url))
-	res.Header().Set("content-type", "text/plain")
-	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte("http://" + host + "/" + data))
-*/
-
 func shortHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
@@ -65,15 +58,15 @@ func shortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	strBody := string(body)
+	url := string(body)
 
-	hash, err := hasher(strBody)
+	hash, err := hasher(url)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	urls[hash] = strBody
+	urls[hash] = url
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
@@ -85,6 +78,7 @@ func shortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// todo -переделать функцию кеширования
 func hasher(url string) (string, error) {
 	h := sha256.New()
 	if _, err := io.WriteString(h, url); err != nil {
