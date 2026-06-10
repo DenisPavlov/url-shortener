@@ -8,17 +8,17 @@ import (
 func Short(urls map[string]string, hasher func(string) (string, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "incorrect method", http.StatusBadRequest)
 			return
 		}
 		if r.Header.Get("Content-Type") != "text/plain" {
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "incorrect content type", http.StatusBadRequest)
 			return
 		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "body must be not empty", http.StatusBadRequest)
 			return
 		}
 
@@ -26,7 +26,7 @@ func Short(urls map[string]string, hasher func(string) (string, error)) http.Han
 
 		hash, err := hasher(url)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
@@ -38,7 +38,7 @@ func Short(urls map[string]string, hasher func(string) (string, error)) http.Han
 		host := r.Host
 		_, err = io.WriteString(w, "http://"+host+"/"+hash)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 	}
 }
@@ -46,7 +46,7 @@ func Short(urls map[string]string, hasher func(string) (string, error)) http.Han
 func GetUrl(urls map[string]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "incorrect method", http.StatusBadRequest)
 			return
 		}
 
@@ -54,7 +54,7 @@ func GetUrl(urls map[string]string) http.HandlerFunc {
 
 		url, ok := urls[hash]
 		if !ok {
-			w.WriteHeader(http.StatusNotFound)
+			http.Error(w, "url not found", http.StatusNotFound)
 			return
 		}
 
