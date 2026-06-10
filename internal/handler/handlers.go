@@ -36,7 +36,7 @@ func Short(urls map[string]string, hasher func(string) (string, error)) http.Han
 		w.WriteHeader(http.StatusCreated)
 
 		host := r.Host
-		_, err = w.Write([]byte("http://" + host + "/" + hash))
+		_, err = io.WriteString(w, "http://"+host+"/"+hash)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
