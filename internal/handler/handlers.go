@@ -3,14 +3,17 @@ package handler
 import (
 	"io"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func Short(urls map[string]string, hasher func(string) (string, error)) http.HandlerFunc {
+func Add(r *chi.Mux, urls map[string]string, hasher func(string) (string, error)) {
+	r.Post("/", short(urls, hasher))
+	r.Get("/{hash}", getUrl(urls))
+}
+
+func short(urls map[string]string, hasher func(string) (string, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "incorrect method", http.StatusBadRequest)
-			return
-		}
 		if r.Header.Get("Content-Type") != "text/plain" {
 			http.Error(w, "incorrect content type", http.StatusBadRequest)
 			return
@@ -43,14 +46,9 @@ func Short(urls map[string]string, hasher func(string) (string, error)) http.Han
 	}
 }
 
-func GetUrl(urls map[string]string) http.HandlerFunc {
+func getUrl(urls map[string]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "incorrect method", http.StatusBadRequest)
-			return
-		}
-
-		hash := r.PathValue("hash")
+		hash := chi.URLParam(r, "hash")
 
 		url, ok := urls[hash]
 		if !ok {

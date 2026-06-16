@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/DenisPavlov/url-shortener/internal/handler"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -19,11 +20,14 @@ func main() {
 var urls = make(map[string]string)
 
 func run() error {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler.Short(urls, hasher))
-	mux.HandleFunc("/{hash}", handler.GetUrl(urls))
+	r := NewRouter()
+	return http.ListenAndServe(`:8080`, r)
+}
 
-	return http.ListenAndServe(`:8080`, mux)
+func NewRouter() chi.Router {
+	r := chi.NewRouter()
+	handler.Add(r, urls, hasher)
+	return r
 }
 
 // todo -переделать функцию кеширования

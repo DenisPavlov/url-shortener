@@ -1,14 +1,17 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"resty.dev/v3"
 )
 
 func TestShort(t *testing.T) {
@@ -32,7 +35,7 @@ func TestShort(t *testing.T) {
 			name:        "incorrect method",
 			method:      http.MethodGet,
 			contentType: "text/plain",
-			code:        http.StatusBadRequest,
+			code:        http.StatusMethodNotAllowed,
 			isError:     true,
 		},
 		{
@@ -49,32 +52,47 @@ func TestShort(t *testing.T) {
 			isError:     true,
 		},
 	}
+
+	client := resty.New()
+	client.SetRedirectPolicy(resty.RedirectNoPolicy())
+	defer func(client *resty.Client) {
+		_ = client.Close()
+	}(client)
+
+	urls := make(map[string]string)
+	hasher := func(url string) (string, error) {
+		return "aaa", nil
+	}
+
+	r := chi.NewRouter()
+	Add(r, urls, hasher)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			urls := make(map[string]string)
-			hasher := func(url string) (string, error) {
-				return "aaa", nil
-			}
 
-			recorder := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.url))
-			req.Header.Set("Content-Type", tt.contentType)
+			req := client.R()
+			req.Method = tt.method
+			req.SetContentType(tt.contentType)
+			req.URL = fmt.Sprintf("%s/", srv.URL)
+			req.Body = io.NopCloser(strings.NewReader(tt.url))
 
-			h := Short(urls, hasher)
-			h(recorder, req)
+			resp, err := req.Send()
+			require.NoError(t, err)
 
-			resp := recorder.Result()
-
-			assert.Equal(t, tt.code, resp.StatusCode)
+			assert.Equal(t, tt.code, resp.StatusCode())
 
 			if tt.isError {
 				return
 			}
 
-			assert.Equal(t, "text/plain", resp.Header.Get("Content-Type"))
+			assert.Equal(t, "text/plain", resp.Header().Get("Content-Type"))
 
-			defer resp.Body.Close()
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(resp.Body)
 			resBody, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
 			assert.Contains(t, string(resBody), "aaa")
@@ -110,28 +128,40 @@ func TestGetUrls(t *testing.T) {
 		{
 			name:    "hash not found",
 			method:  http.MethodGet,
+			hash:    "bbb",
 			code:    http.StatusNotFound,
 			isError: true,
 			hashes:  make(map[string]string),
 		},
 	}
 
+	client := resty.New()
+	client.SetRedirectPolicy(resty.RedirectNoPolicy())
+	defer func(client *resty.Client) {
+		_ = client.Close()
+	}(client)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recorder := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.hash))
-			req.SetPathValue("hash", tt.hash)
+			r := chi.NewRouter()
+			Add(r, tt.hashes, nil)
 
-			h := GetUrl(tt.hashes)
-			h(recorder, req)
+			srv := httptest.NewServer(r)
+			defer srv.Close()
 
-			resp := recorder.Result()
-			assert.Equal(t, tt.code, resp.StatusCode)
+			req := client.R()
+			req.Method = tt.method
+			req.URL = fmt.Sprintf("%s/%s", srv.URL, tt.hash)
+
+			resp, err := req.Send()
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.code, resp.StatusCode())
 			if tt.isError {
 				return
 			}
 
-			assert.Equal(t, "http://test.url", resp.Header.Get("Location"))
+			assert.Equal(t, "http://test.url", resp.Header().Get("Location"))
 
 		})
 	}
