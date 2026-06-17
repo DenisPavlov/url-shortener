@@ -6,12 +6,14 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DenisPavlov/url-shortener/internal/config"
 	"github.com/DenisPavlov/url-shortener/internal/handler"
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
-	if err := run(); err != nil {
+	cfg := config.Load()
+	if err := run(cfg); err != nil {
 		panic(err)
 	}
 }
@@ -19,14 +21,14 @@ func main() {
 // in memory storage
 var urls = make(map[string]string)
 
-func run() error {
-	r := NewRouter()
-	return http.ListenAndServe(`:8080`, r)
+func run(cfg config.Cfg) error {
+	r := NewRouter(cfg)
+	return http.ListenAndServe(cfg.ServerAddress, r)
 }
 
-func NewRouter() chi.Router {
+func NewRouter(cfg config.Cfg) chi.Router {
 	r := chi.NewRouter()
-	handler.Add(r, urls, hasher)
+	handler.Add(r, urls, cfg.ResultHost, hasher)
 	return r
 }
 
