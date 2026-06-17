@@ -1,19 +1,30 @@
 package config
 
-import "flag"
+import (
+	"flag"
+
+	"github.com/caarlos0/env/v6"
+)
 
 type Cfg struct {
-	ServerAddress string
-	ResultHost    string
+	ServerAddress string `env:"SERVER_ADDRESS"`
+	BaseURL       string `env:"BASE_URL"`
 }
 
-func Load() Cfg {
-	serverAddress := flag.String("a", ":8080", "server address")
-	resultAddress := flag.String("b", "http://localhost:8080", "result host")
+func MustLoad() Cfg {
+	serverAddress := flag.String("a", ":8080", "address and port to run server")
+	baseURL := flag.String("b", "http://localhost:8080", "result base url")
 	flag.Parse()
 
-	return Cfg{
+	cfg := Cfg{
 		ServerAddress: *serverAddress,
-		ResultHost:    *resultAddress,
+		BaseURL:       *baseURL,
 	}
+
+	err := env.Parse(&cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	return cfg
 }
