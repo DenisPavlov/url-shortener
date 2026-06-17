@@ -8,12 +8,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func Add(r *chi.Mux, urls map[string]string, host string, hasher func(string) (string, error)) {
-	r.Post("/", short(urls, host, hasher))
+func Add(r *chi.Mux, urls map[string]string, baseURL string, hasher func(string) (string, error)) {
+	r.Post("/", short(urls, baseURL, hasher))
 	r.Get("/{hash}", getUrl(urls))
 }
 
-func short(urls map[string]string, host string, hasher func(string) (string, error)) http.HandlerFunc {
+func short(urls map[string]string, baseURL string, hasher func(string) (string, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "text/plain" {
 			http.Error(w, "incorrect content type", http.StatusBadRequest)
@@ -39,7 +39,7 @@ func short(urls map[string]string, host string, hasher func(string) (string, err
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 
-		_, err = io.WriteString(w, fmt.Sprintf("%s/%s", host, hash))
+		_, err = io.WriteString(w, fmt.Sprintf("%s/%s", baseURL, hash))
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}

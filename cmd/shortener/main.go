@@ -12,7 +12,11 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	fmt.Println("Starting server...")
+
+	cfg := config.MustLoad()
+	fmt.Println("Config:", cfg)
+
 	if err := run(cfg); err != nil {
 		panic(err)
 	}
@@ -28,7 +32,7 @@ func run(cfg config.Cfg) error {
 
 func NewRouter(cfg config.Cfg) chi.Router {
 	r := chi.NewRouter()
-	handler.Add(r, urls, cfg.ResultHost, hasher)
+	handler.Add(r, urls, cfg.BaseURL, hasher)
 	return r
 }
 
