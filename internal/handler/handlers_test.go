@@ -64,8 +64,9 @@ func TestShort(t *testing.T) {
 		return "aaa", nil
 	}
 
+	resultHost := "https://test.url"
 	r := chi.NewRouter()
-	Add(r, urls, hasher)
+	Add(r, urls, resultHost, hasher)
 	srv := httptest.NewServer(r)
 	defer srv.Close()
 
@@ -95,7 +96,7 @@ func TestShort(t *testing.T) {
 			}(resp.Body)
 			resBody, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
-			assert.Contains(t, string(resBody), "aaa")
+			assert.Equal(t, string(resBody), fmt.Sprintf("%s/aaa", resultHost))
 		})
 	}
 }
@@ -144,7 +145,7 @@ func TestGetUrls(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := chi.NewRouter()
-			Add(r, tt.hashes, nil)
+			Add(r, tt.hashes, "", nil)
 
 			srv := httptest.NewServer(r)
 			defer srv.Close()
