@@ -1,8 +1,8 @@
-POST localhost:8888/
+POST localhost:8080/
 Content-Type: text/plain
 
 https://practicum.yandex.ru/
 
 
 ### get url by hash
-GET localhost:8888/42b3e75f92145d25a4fd87a82991687f46c1a8e72b583d9943b1eb361e255276
+GET localhost:8080/42b3e75f92145d25a4fd87a82991687f46c1a8e72b583d9943b1eb361e255276

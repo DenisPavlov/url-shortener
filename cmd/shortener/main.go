@@ -8,14 +8,17 @@ import (
 
 	"github.com/DenisPavlov/url-shortener/internal/config"
 	"github.com/DenisPavlov/url-shortener/internal/handler"
+	"github.com/DenisPavlov/url-shortener/internal/logger"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 func main() {
 	fmt.Println("Starting server...")
 
 	cfg := config.MustLoad()
-	fmt.Println("Config:", cfg)
+	logger.MustInitialize(cfg.LogLevel)
+	logger.Log.Info("Config was loaded successfully", zap.Any("config", cfg))
 
 	if err := run(cfg); err != nil {
 		panic(err)
@@ -32,6 +35,7 @@ func run(cfg config.Cfg) error {
 
 func NewRouter(cfg config.Cfg) chi.Router {
 	r := chi.NewRouter()
+	r.Use(logger.RequestLogger)
 	handler.Add(r, urls, cfg.BaseURL, hasher)
 	return r
 }
