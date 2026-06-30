@@ -6,3 +6,11 @@ https://practicum.yandex.ru/
 
 ### get url by hash
 GET localhost:8080/42b3e75f92145d25a4fd87a82991687f46c1a8e72b583d9943b1eb361e255276
+
+###
+POST http://localhost:8080/api/shorten
+Content-Type: application/json
+
+{
+  "url": "https://practicum.yandex.ru"
+}
