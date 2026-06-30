@@ -167,3 +167,99 @@ func TestGetUrls(t *testing.T) {
 		})
 	}
 }
+
+func TestShorten(t *testing.T) {
+	tests := []struct {
+		name        string
+		method      string
+		contentType string
+		reqBody     string
+		code        int
+		isError     bool
+		respBody    string
+	}{
+		{
+			name:        "happy path",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			reqBody:     `{"url":"https://test.url"}`,
+			code:        http.StatusCreated,
+			isError:     false,
+			respBody: `{"result":"https://test.url/aaa"}
+`,
+		},
+		{
+			name:        "incorrect method",
+			method:      http.MethodGet,
+			contentType: "application/json",
+			code:        http.StatusMethodNotAllowed,
+			isError:     true,
+		},
+		{
+			name:    "unset Content-Type",
+			method:  http.MethodPost,
+			code:    http.StatusBadRequest,
+			isError: true,
+		},
+		{
+			name:        "incorrect Content-Type",
+			method:      http.MethodPost,
+			contentType: "text/plain",
+			code:        http.StatusBadRequest,
+			isError:     true,
+		},
+		{
+			name:        "empty body",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			code:        http.StatusBadRequest,
+			isError:     true,
+		},
+	}
+
+	client := resty.New()
+	defer func(client *resty.Client) {
+		_ = client.Close()
+	}(client)
+
+	urls := make(map[string]string)
+	hasher := func(url string) (string, error) {
+		return "aaa", nil
+	}
+
+	resultHost := "https://test.url"
+	r := chi.NewRouter()
+	Add(r, urls, resultHost, hasher)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			req := client.R()
+			req.Method = tt.method
+			req.SetContentType(tt.contentType)
+			req.URL = fmt.Sprintf("%s/api/shorten", srv.URL)
+			req.Body = io.NopCloser(strings.NewReader(tt.reqBody))
+
+			resp, err := req.Send()
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.code, resp.StatusCode())
+
+			if tt.isError {
+				return
+			}
+
+			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(resp.Body)
+			resBody, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, tt.respBody, string(resBody))
+		})
+	}
+}
