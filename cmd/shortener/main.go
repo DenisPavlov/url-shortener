@@ -9,6 +9,7 @@ import (
 	"github.com/DenisPavlov/url-shortener/internal/config"
 	"github.com/DenisPavlov/url-shortener/internal/handler"
 	"github.com/DenisPavlov/url-shortener/internal/logger"
+	"github.com/DenisPavlov/url-shortener/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -36,6 +37,7 @@ func run(cfg config.Cfg) error {
 func NewRouter(cfg config.Cfg) chi.Router {
 	r := chi.NewRouter()
 	r.Use(logger.RequestLogger)
+	r.Use(middleware.Gzip)
 	handler.Add(r, urls, cfg.BaseURL, hasher)
 	return r
 }

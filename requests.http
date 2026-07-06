@@ -1,5 +1,6 @@
 POST localhost:8080/
 Content-Type: text/plain
+Accept-Encoding: gzip
 
 https://practicum.yandex.ru/
 
@@ -10,6 +11,7 @@ GET localhost:8080/42b3e75f92145d25a4fd87a82991687f46c1a8e72b583d9943b1eb361e255
 ###
 POST http://localhost:8080/api/shorten
 Content-Type: application/json
+Accept-Encoding: gzip
 
 {
   "url": "https://practicum.yandex.ru"
